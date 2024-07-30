@@ -1,0 +1,291 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  username      String?
+  email         String?    @unique
+  emailVerified DateTime?  @map("email_verified")
+  image         String?
+  password      String?
+  birthday      DateTime?  @db.Date
+  tall          Int?
+  weight        Int?
+  sex           String?
+  roleId        Int        @map("role_id")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  accounts      Account[]
+  sessions      Session[]
+  addresses     Address[]
+  userTerms     UserTerm[]
+  carts         Cart[]
+  likes         Like[]
+  orders        Order[]
+  role          Role       @relation(fields: [roleId], references: [id])
+  Review        Review[]
+
+  @@map("users")
+}
+
+model Role {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  user        User[]
+
+  @@map("roles")
+}
+
+model UserTerm {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  termId    Int      @map("term_id")
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@map("user_terms")
+}
+
+model Term {
+  id          Int        @id @default(autoincrement())
+  name        String
+  required    Boolean
+  description String?
+  userTerm    UserTerm[]
+
+  @@map("terms")
+}
+
+model Address {
+  id            Int      @id @default(autoincrement())
+  userId        String   @map("user_id")
+  name          String?
+  recipient     String
+  phone         Int
+  address       String
+  addressDetail String?  @map("address_detail")
+  postCode      Int      @map("post_code")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@map("addresses")
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  price        Float
+  thumbnail    String
+  categoryId   Int           @map("category_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  category     Category      @relation(fields: [categoryId], references: [id])
+  productItems ProductItem[]
+  carts        Cart[]
+  likes        Like[]
+  orderItems   OrderItem[]
+  Review       Review[]
+  Discount     Discount[]
+
+  @@map("products")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  parentId Int?      @map("parent_id")
+  name     String
+  products Product[]
+  sizes    Size[]
+
+  @@map("categories")
+}
+
+model Color {
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String
+  productItems ProductItem[]
+
+  @@map("colors")
+}
+
+model Size {
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String
+  categoryId   Int           @map("category_id")
+  category     Category      @relation(fields: [categoryId], references: [id])
+  productItems ProductItem[]
+
+  @@map("sizes")
+}
+
+model ProductItem {
+  id         Int         @id @default(autoincrement())
+  productId  Int         @map("product_id")
+  colorId    Int         @map("color_id")
+  sizeId     Int         @map("size_id")
+  quantity   Int
+  discount   Float
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  product    Product     @relation(fields: [productId], references: [id])
+  color      Color       @relation(fields: [colorId], references: [id])
+  size       Size        @relation(fields: [sizeId], references: [id])
+  carts      Cart[]
+  orderItems OrderItem[]
+
+  @@map("product_items")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  productId Int      @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@map("likes")
+}
+
+model Cart {
+  id            Int         @id @default(autoincrement())
+  userId        String      @map("user_id")
+  productId     Int         @map("product_id")
+  productItemId Int         @map("product_item_id")
+  quantity      Int
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id])
+  productItem   ProductItem @relation(fields: [productItemId], references: [id])
+
+  @@map("carts")
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  userId     String      @map("user_id")
+  addressId  Int         @map("address_id")
+  total      Float
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  user       User        @relation(fields: [userId], references: [id])
+  address    Address     @relation(fields: [addressId], references: [id])
+  orderItems OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id             Int         @id @default(autoincrement())
+  orderId        Int         @map("order_id")
+  productId      Int         @map("product_id")
+  productItemId  Int         @map("product_item_id")
+  quantity       Int
+  discountId     String
+  deliveryStatus String      @map("delivery_status")
+  refund         Boolean     @default(false)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  order          Order       @relation(fields: [orderId], references: [id])
+  product        Product     @relation(fields: [productId], references: [id])
+  productItem    ProductItem @relation(fields: [productItemId], references: [id])
+  review         Review[]
+  discount       Discount    @relation(fields: [discountId], references: [id])
+
+  @@map("order_items")
+}
+
+model Discount {
+  id          String      @id @default(cuid())
+  name        String
+  discount    Float
+  description String?
+  productId   Int         @map("product_id")
+  startAt     DateTime    @map("start_at")
+  endAt       DateTime    @map("end_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  product     Product     @relation(fields: [productId], references: [id])
+  OrderItem   OrderItem[]
+
+  @@map("discounts")
+}
+
+model Review {
+  id          Int        @id @default(autoincrement())
+  userId      String     @map("user_id")
+  productId   Int        @map("product_id")
+  orderItemId Int?       @map("order_item_id")
+  content     String
+  rating      Int
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product    @relation(fields: [productId], references: [id])
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+
+  @@map("reviews")
+}
