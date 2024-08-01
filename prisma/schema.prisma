@@ -13,6 +13,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.svg"
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -53,20 +58,20 @@ model VerificationToken {
 }
 
 model User {
-  id            String     @id @default(cuid())
+  id            String        @id @default(cuid())
   name          String?
   username      String?
-  email         String?    @unique
-  emailVerified DateTime?  @map("email_verified")
+  email         String?       @unique
+  emailVerified DateTime?     @map("email_verified")
   image         String?
   password      String?
-  birthday      DateTime?  @db.Date
+  birthday      DateTime?     @db.Date
   tall          Int?
   weight        Int?
   sex           String?
-  roleId        Int        @map("role_id")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  roleId        Int           @map("role_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
   accounts      Account[]
   sessions      Session[]
   addresses     Address[]
@@ -74,8 +79,15 @@ model User {
   carts         Cart[]
   likes         Like[]
   orders        Order[]
-  role          Role       @relation(fields: [roleId], references: [id])
+  role          Role          @relation(fields: [roleId], references: [id])
   Review        Review[]
+  Question      Question[]
+  UserCoupon    UserCoupon[]
+  Point         Point[]
+  PointDetail   PointDetail[]
+  Post          Post[]
+  PostComment   PostComment[]
+  Payment       Payment[]
 
   @@map("users")
 }
@@ -113,18 +125,19 @@ model Term {
 }
 
 model Address {
-  id            Int      @id @default(autoincrement())
-  userId        String   @map("user_id")
-  name          String?
-  recipient     String
-  phone         Int
-  address       String
-  addressDetail String?  @map("address_detail")
-  postCode      Int      @map("post_code")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders        Order[]
+  id              Int      @id @default(autoincrement())
+  userId          String   @map("user_id")
+  name            String?
+  recipient       String
+  phone           Int
+  address         String
+  addressDetail   String?  @map("address_detail")
+  addressEntrance String?  @map("address_entrance")
+  postCode        Int      @map("post_code")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders          Order[]
 
   @@map("addresses")
 }
@@ -145,6 +158,7 @@ model Product {
   orderItems   OrderItem[]
   Review       Review[]
   Discount     Discount[]
+  Question     Question[]
 
   @@map("products")
 }
@@ -234,26 +248,28 @@ model Order {
   user       User        @relation(fields: [userId], references: [id])
   address    Address     @relation(fields: [addressId], references: [id])
   orderItems OrderItem[]
+  Payment    Payment[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id             Int         @id @default(autoincrement())
-  orderId        Int         @map("order_id")
-  productId      Int         @map("product_id")
-  productItemId  Int         @map("product_item_id")
-  quantity       Int
-  discountId     String
-  deliveryStatus String      @map("delivery_status")
-  refund         Boolean     @default(false)
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
-  order          Order       @relation(fields: [orderId], references: [id])
-  product        Product     @relation(fields: [productId], references: [id])
-  productItem    ProductItem @relation(fields: [productItemId], references: [id])
-  review         Review[]
-  discount       Discount    @relation(fields: [discountId], references: [id])
+  id            Int         @id @default(autoincrement())
+  orderId       Int         @map("order_id")
+  productId     Int         @map("product_id")
+  productItemId Int         @map("product_item_id")
+  quantity      Int
+  discountId    String
+  status        String      @default("pending")
+  refund        Boolean     @default(false)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  order         Order       @relation(fields: [orderId], references: [id])
+  product       Product     @relation(fields: [productId], references: [id])
+  productItem   ProductItem @relation(fields: [productItemId], references: [id])
+  review        Review[]
+  discount      Discount    @relation(fields: [discountId], references: [id])
+  Payment       Payment[]
 
   @@map("order_items")
 }
@@ -288,4 +304,130 @@ model Review {
   orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
 
   @@map("reviews")
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  productId Int      @map("product_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@map("questions")
+}
+
+model Coupon {
+  id         String       @id @default(cuid())
+  name       String
+  image      String?
+  price      Float?
+  maxPrice   Float?       @map("max_price")
+  minPrice   Float?       @map("min_price")
+  rate       Float?
+  startAt    DateTime?    @map("start_at")
+  endAt      DateTime?    @map("end_at")
+  quantity   Int?
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  UserCoupon UserCoupon[]
+
+  @@map("coupons")
+}
+
+model UserCoupon {
+  id        Int       @id @default(autoincrement())
+  userId    String    @map("user_id")
+  couponId  String    @map("coupon_id")
+  used      Boolean
+  reason    String?
+  endAt     DateTime? @map("end_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon    Coupon    @relation(fields: [couponId], references: [id])
+
+  @@map("user_coupons")
+}
+
+model Point {
+  id          Int           @id @default(autoincrement())
+  userId      String        @map("user_id")
+  point       Int
+  reason      String?
+  expiredAt   DateTime?     @map("expired_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PointDetail PointDetail[]
+
+  @@map("points")
+}
+
+model PointDetail {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  pointId   Int      @map("point_id")
+  use       Int
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  point     Point    @relation(fields: [pointId], references: [id])
+
+  @@map("point_details")
+}
+
+model Post {
+  id             Int           @id @default(autoincrement())
+  title          String
+  content        String
+  userId         String        @map("user_id")
+  postCategoryId Int?          @map("post_category_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  user           User          @relation(fields: [userId], references: [id])
+  postCategory   PostCategory? @relation(fields: [postCategoryId], references: [id])
+  PostComment    PostComment[]
+
+  @@map("posts")
+}
+
+model PostCategory {
+  id    Int    @id @default(autoincrement())
+  name  String
+  posts Post[]
+
+  @@map("post_categories")
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  postId    Int      @map("post_id")
+  userId    String   @map("user_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("post_comments")
+}
+
+model Payment {
+  id          Int        @id @default(autoincrement())
+  orderId     Int        @map("order_id")
+  orderItemId Int?       @map("order_item_id")
+  userId      String     @map("user_id")
+  price       Float
+  status      String
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  order       Order      @relation(fields: [orderId], references: [id])
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@map("payments")
 }
