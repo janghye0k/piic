@@ -1,7 +1,6 @@
+import AuthSessionProvider from '@/app/provider/AuthSessionProvider';
 import type { Metadata } from 'next';
-import './globals.css';
-import { SessionProvider } from 'next-auth/react';
-import { getServerSession } from 'next-auth';
+import '@/app/styles/globals.css';
 
 type Props = {
   children: React.ReactNode;
@@ -13,12 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<Props>) {
-  const session = await getServerSession();
-
   return (
     <html lang="ko">
       <body>
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <AuthSessionProvider>{children}</AuthSessionProvider>
       </body>
     </html>
   );
