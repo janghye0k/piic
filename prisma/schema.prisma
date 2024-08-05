@@ -185,7 +185,7 @@ model Color {
 model Size {
   id           Int           @id @default(autoincrement())
   name         String
-  code         String
+  size         String
   categoryId   Int           @map("category_id")
   category     Category      @relation(fields: [categoryId], references: [id])
   productItems ProductItem[]
