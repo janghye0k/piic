@@ -1,9 +1,11 @@
-import { AuthOptions } from 'next-auth';
-import NaverProvider from 'next-auth/providers/naver';
-import KakaoProvider from 'next-auth/providers/kakao';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { z } from 'zod';
 import prisma from '@/shared/libs/prisma';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import { AuthOptions } from 'next-auth';
+import NextAuth from 'next-auth/next';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import KakaoProvider from 'next-auth/providers/kakao';
+import NaverProvider from 'next-auth/providers/naver';
+import { z } from 'zod';
 
 async function getUser(email: string) {
   try {
@@ -16,6 +18,7 @@ async function getUser(email: string) {
 }
 
 export const authOptions: AuthOptions = {
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     NaverProvider({
       clientId: process.env.NAVER_CLIEND_ID as string,
@@ -33,7 +36,7 @@ export const authOptions: AuthOptions = {
       // e.g. domain, username, password, 2FA token, etc.
       // You can pass any HTML attribute to the <input> tag through the object.
       credentials: {
-        username: { label: 'Email', type: 'email', placeholder: 'jsmith' },
+        username: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials, req) {
@@ -51,4 +54,13 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+  pages: {
+    signIn: '/signin',
+    signOut: '/signout',
+    error: '/auth/error',
+    verifyRequest: '/auth/verify-request',
+    newUser: '/auth/new-user',
+  },
 };
+
+export const { handlers, signIn, signOut, auth } = NextAuth(authOptions);

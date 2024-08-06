@@ -1,6 +1,6 @@
 import { createClient } from 'redis';
 
-let client: ReturnType<typeof createClient>;
+let client;
 
 export default async function createRedisInstance() {
   try {
@@ -45,5 +45,5 @@ export default async function createRedisInstance() {
     }
   }
 
-  return client;
+  return /** @type {ReturnType<typeof createClient>} */ (client);
 }

@@ -15,11 +15,15 @@ export async function POST(request: Request) {
     return new Response(`Invalid data provided\n${parsedBody.error.message}`, { status: 400 });
   }
 
-  const hashedPassword = await hash(parsedBody.data.password, 10);
-  parsedBody.data.password = hashedPassword;
-
-  await prisma.user.create({ data: { ...parsedBody.data, roleId: 1 } });
+  try {
+    const hashedPassword = await hash(parsedBody.data.password, 10);
+    parsedBody.data.password = hashedPassword;
+    await prisma.user.create({ data: { ...parsedBody.data, roleId: 1 } });
+  } catch (error) {
+    console.error(error);
+    return new Response('Failed to create user', { status: 500 });
+  }
 
   // do somthing
-  return new Response('user created', { status: 200 });
+  return new Response('User created', { status: 200 });
 }
